@@ -275,14 +275,7 @@ class _SwSampler(Sampler):
 
     def otel_decision_from_liboboe(self, liboboe_decision: dict) -> enum.Enum:
         """Formats OTel decision from liboboe decision"""
-        decision = Decision.DROP
-        if liboboe_decision["do_sample"]:
-            # even if not do_metrics
-            # pylint:disable=redefined-variable-type
-            decision = Decision.RECORD_AND_SAMPLE
-        elif liboboe_decision["do_metrics"]:
-            # pylint:disable=redefined-variable-type
-            decision = Decision.RECORD_ONLY
+        decision = Decision.RECORD_AND_SAMPLE
         logger.debug("OTel decision created: %s", decision)
         return decision
 

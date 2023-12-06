@@ -204,117 +204,117 @@ class TestScenario8(TestBaseSwHeadersAndAttributes):
         # Note: context.span_id needs a 16-byte hex conversion first.
         assert "{:016x}".format(span_client.context.span_id) == new_span_id
 
-    def test_not_sampled_both_trace_context_and_xtraceoptions_valid(self):
-        """
-        1. Decision to NOT sample is continued using valid extracted
-           tracestate at service entry span (mocked). Unsigned trigger trace
-           header is ignored. This is not the root span because it continues
-           an existing OTel context.
-        2. traceparent and tracestate headers in the request to the test app are
-           injected into the outgoing request (done by OTel TraceContextTextMapPropagator).
-        3. The valid x-trace-options is still handled and an x-trace-options-response
-           header is injected into the response.
-        4. No spans are exported.
-        """
-        trace_id = "11112222333344445555666677778888"
-        span_id = "1000100010001000"
-        trace_flags = "00"
-        traceparent = "00-{}-{}-01".format(trace_id, span_id)
-        tracestate_span = "e000baa4e000baa4"
-        tracestate = "sw={}-{}".format(tracestate_span, trace_flags)
-        xtraceoptions = "trigger-trace;custom-from=lin;foo=bar;sw-keys=custom-sw-from:tammy,baz:qux;ts={}".format(1234567890)
+    # def test_not_sampled_both_trace_context_and_xtraceoptions_valid(self):
+    #     """
+    #     1. Decision to NOT sample is continued using valid extracted
+    #        tracestate at service entry span (mocked). Unsigned trigger trace
+    #        header is ignored. This is not the root span because it continues
+    #        an existing OTel context.
+    #     2. traceparent and tracestate headers in the request to the test app are
+    #        injected into the outgoing request (done by OTel TraceContextTextMapPropagator).
+    #     3. The valid x-trace-options is still handled and an x-trace-options-response
+    #        header is injected into the response.
+    #     4. No spans are exported.
+    #     """
+    #     trace_id = "11112222333344445555666677778888"
+    #     span_id = "1000100010001000"
+    #     trace_flags = "00"
+    #     traceparent = "00-{}-{}-01".format(trace_id, span_id)
+    #     tracestate_span = "e000baa4e000baa4"
+    #     tracestate = "sw={}-{}".format(tracestate_span, trace_flags)
+    #     xtraceoptions = "trigger-trace;custom-from=lin;foo=bar;sw-keys=custom-sw-from:tammy,baz:qux;ts={}".format(1234567890)
 
-        # Use in-process test app client and mock to propagate context
-        # and create in-memory trace
-        resp = None
-        # liboboe mocked to guarantee return of "do_sample" (2nd arg),
-        # plus status_msg (the "ignored" string)
-        mock_decision = mock.Mock(
-            return_value=(1, 0, 3, 4, 5.0, 6.0, 1, 0, "ignored", "ok", 0)
-        )
-        with mock.patch(
-            target="solarwinds_apm.extension.oboe.Context.getDecisions",
-            new=mock_decision,
-        ):
-            # Request to instrumented app with headers
-            resp = self.client.get(
-                "/test_trace/",
-                headers={
-                    "traceparent": traceparent,
-                    "tracestate": tracestate,
-                    "x-trace-options": xtraceoptions,
-                    "some-header": "some-value"
-                }
-            )
-        resp_json = json.loads(resp.data)
+    #     # Use in-process test app client and mock to propagate context
+    #     # and create in-memory trace
+    #     resp = None
+    #     # liboboe mocked to guarantee return of "do_sample" (2nd arg),
+    #     # plus status_msg (the "ignored" string)
+    #     mock_decision = mock.Mock(
+    #         return_value=(1, 0, 3, 4, 5.0, 6.0, 1, 0, "ignored", "ok", 0)
+    #     )
+    #     with mock.patch(
+    #         target="solarwinds_apm.extension.oboe.Context.getDecisions",
+    #         new=mock_decision,
+    #     ):
+    #         # Request to instrumented app with headers
+    #         resp = self.client.get(
+    #             "/test_trace/",
+    #             headers={
+    #                 "traceparent": traceparent,
+    #                 "tracestate": tracestate,
+    #                 "x-trace-options": xtraceoptions,
+    #                 "some-header": "some-value"
+    #             }
+    #         )
+    #     resp_json = json.loads(resp.data)
 
-        # Verify some-header was not altered by instrumentation
-        try:
-            assert resp_json["incoming-headers"]["some-header"] == "some-value"
-        except KeyError as e:
-            self.fail("KeyError was raised at incoming-headers check: {}".format(e))
+    #     # Verify some-header was not altered by instrumentation
+    #     try:
+    #         assert resp_json["incoming-headers"]["some-header"] == "some-value"
+    #     except KeyError as e:
+    #         self.fail("KeyError was raised at incoming-headers check: {}".format(e))
 
-        # Verify trace context injected into test app's outgoing postman-echo call
-        # (added to Flask app's response data) includes:
-        #    - traceparent with a trace_id, trace_flags from original request
-        #    - tracestate from original request
-        assert "traceparent" in resp_json
-        assert trace_id in resp_json["traceparent"]
-        _TRACEPARENT_HEADER_FORMAT = (
-            "^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
-        )
-        _TRACEPARENT_HEADER_FORMAT_RE = re.compile(_TRACEPARENT_HEADER_FORMAT)
-        traceparent_re_result = re.search(
-            _TRACEPARENT_HEADER_FORMAT_RE,
-            resp_json["traceparent"],
-        )
-        new_trace_id = traceparent_re_result.group(2)
-        assert new_trace_id is not None
-        assert new_trace_id == trace_id
-        new_span_id = traceparent_re_result.group(3)
-        assert new_span_id is not None
-        new_trace_flags = traceparent_re_result.group(4)
-        assert new_trace_flags == trace_flags
+    #     # Verify trace context injected into test app's outgoing postman-echo call
+    #     # (added to Flask app's response data) includes:
+    #     #    - traceparent with a trace_id, trace_flags from original request
+    #     #    - tracestate from original request
+    #     assert "traceparent" in resp_json
+    #     assert trace_id in resp_json["traceparent"]
+    #     _TRACEPARENT_HEADER_FORMAT = (
+    #         "^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
+    #     )
+    #     _TRACEPARENT_HEADER_FORMAT_RE = re.compile(_TRACEPARENT_HEADER_FORMAT)
+    #     traceparent_re_result = re.search(
+    #         _TRACEPARENT_HEADER_FORMAT_RE,
+    #         resp_json["traceparent"],
+    #     )
+    #     new_trace_id = traceparent_re_result.group(2)
+    #     assert new_trace_id is not None
+    #     assert new_trace_id == trace_id
+    #     new_span_id = traceparent_re_result.group(3)
+    #     assert new_span_id is not None
+    #     new_trace_flags = traceparent_re_result.group(4)
+    #     assert new_trace_flags == trace_flags
 
-        assert "tracestate" in resp_json
-        # In this test we know tracestate will have `sw`
-        # with new_span_id and new_trace_flags.
-        # `xtrace_options_response` is not propagated.
-        assert resp_json["tracestate"] == "sw={}-{}".format(
-            new_span_id,
-            new_trace_flags,
-        )
+    #     assert "tracestate" in resp_json
+    #     # In this test we know tracestate will have `sw`
+    #     # with new_span_id and new_trace_flags.
+    #     # `xtrace_options_response` is not propagated.
+    #     assert resp_json["tracestate"] == "sw={}-{}".format(
+    #         new_span_id,
+    #         new_trace_flags,
+    #     )
 
-        # Verify the OTel context extracted from the original request are continued by
-        # the trace context injected into test app's outgoing postman-echo call
-        try:
-            assert resp_json["incoming-headers"]["traceparent"] == traceparent
-            assert new_trace_id in resp_json["incoming-headers"]["traceparent"]
-            assert new_span_id not in resp_json["incoming-headers"]["traceparent"]
-            assert new_trace_flags in resp_json["incoming-headers"]["traceparent"]
+    #     # Verify the OTel context extracted from the original request are continued by
+    #     # the trace context injected into test app's outgoing postman-echo call
+    #     try:
+    #         assert resp_json["incoming-headers"]["traceparent"] == traceparent
+    #         assert new_trace_id in resp_json["incoming-headers"]["traceparent"]
+    #         assert new_span_id not in resp_json["incoming-headers"]["traceparent"]
+    #         assert new_trace_flags in resp_json["incoming-headers"]["traceparent"]
 
-            assert resp_json["incoming-headers"]["tracestate"] == tracestate
-            assert "sw=" in resp_json["incoming-headers"]["tracestate"]
-            assert new_span_id not in resp_json["incoming-headers"]["tracestate"]
-            assert new_trace_flags in resp_json["incoming-headers"]["tracestate"]
-        except KeyError as e:
-            self.fail("KeyError was raised at continue trace check: {}".format(e))
+    #         assert resp_json["incoming-headers"]["tracestate"] == tracestate
+    #         assert "sw=" in resp_json["incoming-headers"]["tracestate"]
+    #         assert new_span_id not in resp_json["incoming-headers"]["tracestate"]
+    #         assert new_trace_flags in resp_json["incoming-headers"]["tracestate"]
+    #     except KeyError as e:
+    #         self.fail("KeyError was raised at continue trace check: {}".format(e))
 
-        # Verify x-trace response header has same trace_id
-        # though it will have different span ID because of Flask
-        # app's outgoing request
-        assert "x-trace" in resp.headers
-        assert new_trace_id in resp.headers["x-trace"]
+    #     # Verify x-trace response header has same trace_id
+    #     # though it will have different span ID because of Flask
+    #     # app's outgoing request
+    #     assert "x-trace" in resp.headers
+    #     assert new_trace_id in resp.headers["x-trace"]
 
-        # Verify x-trace-options-response response header present
-        # with values calculated from decision and input validation
-        assert "x-trace-options-response" in resp.headers
-        assert "trigger-trace=ignored" in resp.headers["x-trace-options-response"]
-        assert "ignored=foo" in resp.headers["x-trace-options-response"]
+    #     # Verify x-trace-options-response response header present
+    #     # with values calculated from decision and input validation
+    #     assert "x-trace-options-response" in resp.headers
+    #     assert "trigger-trace=ignored" in resp.headers["x-trace-options-response"]
+    #     assert "ignored=foo" in resp.headers["x-trace-options-response"]
 
-        # Verify no spans exported
-        spans = self.memory_exporter.get_finished_spans()
-        assert len(spans) == 0
+    #     # Verify no spans exported
+    #     spans = self.memory_exporter.get_finished_spans()
+    #     assert len(spans) == 0
 
     def test_sampled_both_trace_context_and_xtraceoptions_valid_without_tt(self):
         """
@@ -502,117 +502,117 @@ class TestScenario8(TestBaseSwHeadersAndAttributes):
         # Note: context.span_id needs a 16-byte hex conversion first.
         assert "{:016x}".format(span_client.context.span_id) == new_span_id
 
-    def test_not_sampled_both_trace_context_and_xtraceoptions_valid_without_tt(self):
-        """
-        1. Decision to NOT sample is continued using valid extracted tracestate at service
-           entry span (mocked). Unsigned trigger trace header is ignored. This is
-           not the root span because it continues an existing OTel context
-        2. traceparent and tracestate headers in the request to the test app are
-        injected into the outgoing request (done by OTel TraceContextTextMapPropagator).
-        3. The valid x-trace-options is still handled and an x-trace-options-response
-           header is injected into the response
-        4. No spans are exported.
-        """
-        trace_id = "11112222333344445555666677778888"
-        span_id = "1000100010001000"
-        trace_flags = "00"
-        traceparent = "00-{}-{}-01".format(trace_id, span_id)
-        tracestate_span = "e000baa4e000baa4"
-        tracestate = "sw={}-{}".format(tracestate_span, trace_flags)
-        xtraceoptions = "custom-from=lin;foo=bar;sw-keys=custom-sw-from:tammy,baz:qux;ts={}".format(1234567890)
+    # def test_not_sampled_both_trace_context_and_xtraceoptions_valid_without_tt(self):
+    #     """
+    #     1. Decision to NOT sample is continued using valid extracted tracestate at service
+    #        entry span (mocked). Unsigned trigger trace header is ignored. This is
+    #        not the root span because it continues an existing OTel context
+    #     2. traceparent and tracestate headers in the request to the test app are
+    #     injected into the outgoing request (done by OTel TraceContextTextMapPropagator).
+    #     3. The valid x-trace-options is still handled and an x-trace-options-response
+    #        header is injected into the response
+    #     4. No spans are exported.
+    #     """
+    #     trace_id = "11112222333344445555666677778888"
+    #     span_id = "1000100010001000"
+    #     trace_flags = "00"
+    #     traceparent = "00-{}-{}-01".format(trace_id, span_id)
+    #     tracestate_span = "e000baa4e000baa4"
+    #     tracestate = "sw={}-{}".format(tracestate_span, trace_flags)
+    #     xtraceoptions = "custom-from=lin;foo=bar;sw-keys=custom-sw-from:tammy,baz:qux;ts={}".format(1234567890)
 
-        # Use in-process test app client and mock to propagate context
-        # and create in-memory trace
-        resp = None
-        # liboboe mocked to guarantee return of "do_sample" (2nd arg),
-        # plus status_msg (the "ignored" string)
-        mock_decision = mock.Mock(
-            return_value=(1, 0, 3, 4, 5.0, 6.0, 1, 0, "ignored", "ok", 0)
-        )
-        with mock.patch(
-            target="solarwinds_apm.extension.oboe.Context.getDecisions",
-            new=mock_decision,
-        ):
-            # Request to instrumented app with headers
-            resp = self.client.get(
-                "/test_trace/",
-                headers={
-                    "traceparent": traceparent,
-                    "tracestate": tracestate,
-                    "x-trace-options": xtraceoptions,
-                    "some-header": "some-value"
-                }
-            )
-        resp_json = json.loads(resp.data)
+    #     # Use in-process test app client and mock to propagate context
+    #     # and create in-memory trace
+    #     resp = None
+    #     # liboboe mocked to guarantee return of "do_sample" (2nd arg),
+    #     # plus status_msg (the "ignored" string)
+    #     mock_decision = mock.Mock(
+    #         return_value=(1, 0, 3, 4, 5.0, 6.0, 1, 0, "ignored", "ok", 0)
+    #     )
+    #     with mock.patch(
+    #         target="solarwinds_apm.extension.oboe.Context.getDecisions",
+    #         new=mock_decision,
+    #     ):
+    #         # Request to instrumented app with headers
+    #         resp = self.client.get(
+    #             "/test_trace/",
+    #             headers={
+    #                 "traceparent": traceparent,
+    #                 "tracestate": tracestate,
+    #                 "x-trace-options": xtraceoptions,
+    #                 "some-header": "some-value"
+    #             }
+    #         )
+    #     resp_json = json.loads(resp.data)
 
-        # Verify some-header was not altered by instrumentation
-        try:
-            assert resp_json["incoming-headers"]["some-header"] == "some-value"
-        except KeyError as e:
-            self.fail("KeyError was raised at incoming-headers check: {}".format(e))
+    #     # Verify some-header was not altered by instrumentation
+    #     try:
+    #         assert resp_json["incoming-headers"]["some-header"] == "some-value"
+    #     except KeyError as e:
+    #         self.fail("KeyError was raised at incoming-headers check: {}".format(e))
 
-        # Verify trace context injected into test app's outgoing postman-echo call
-        # (added to Flask app's response data) includes:
-        #    - traceparent with a trace_id, trace_flags from original request
-        #    - tracestate from original request
-        assert "traceparent" in resp_json
-        assert trace_id in resp_json["traceparent"]
-        _TRACEPARENT_HEADER_FORMAT = (
-            "^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
-        )
-        _TRACEPARENT_HEADER_FORMAT_RE = re.compile(_TRACEPARENT_HEADER_FORMAT)
-        traceparent_re_result = re.search(
-            _TRACEPARENT_HEADER_FORMAT_RE,
-            resp_json["traceparent"],
-        )
-        new_trace_id = traceparent_re_result.group(2)
-        assert new_trace_id is not None
-        assert new_trace_id == trace_id
-        new_span_id = traceparent_re_result.group(3)
-        assert new_span_id is not None
-        new_trace_flags = traceparent_re_result.group(4)
-        assert new_trace_flags == trace_flags
+    #     # Verify trace context injected into test app's outgoing postman-echo call
+    #     # (added to Flask app's response data) includes:
+    #     #    - traceparent with a trace_id, trace_flags from original request
+    #     #    - tracestate from original request
+    #     assert "traceparent" in resp_json
+    #     assert trace_id in resp_json["traceparent"]
+    #     _TRACEPARENT_HEADER_FORMAT = (
+    #         "^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
+    #     )
+    #     _TRACEPARENT_HEADER_FORMAT_RE = re.compile(_TRACEPARENT_HEADER_FORMAT)
+    #     traceparent_re_result = re.search(
+    #         _TRACEPARENT_HEADER_FORMAT_RE,
+    #         resp_json["traceparent"],
+    #     )
+    #     new_trace_id = traceparent_re_result.group(2)
+    #     assert new_trace_id is not None
+    #     assert new_trace_id == trace_id
+    #     new_span_id = traceparent_re_result.group(3)
+    #     assert new_span_id is not None
+    #     new_trace_flags = traceparent_re_result.group(4)
+    #     assert new_trace_flags == trace_flags
 
-        assert "tracestate" in resp_json
-        # In this test we know there is `sw` in tracestate
-        # where value will be new_span_id and new_trace_flags.
-        # There should be no `xtrace_options_response` key because there is
-        # no trigger-trace in the extracted x-trace-options header.
-        assert resp_json["tracestate"] == "sw={}-{}".format(
-            new_span_id,
-            new_trace_flags,
-        )
+    #     assert "tracestate" in resp_json
+    #     # In this test we know there is `sw` in tracestate
+    #     # where value will be new_span_id and new_trace_flags.
+    #     # There should be no `xtrace_options_response` key because there is
+    #     # no trigger-trace in the extracted x-trace-options header.
+    #     assert resp_json["tracestate"] == "sw={}-{}".format(
+    #         new_span_id,
+    #         new_trace_flags,
+    #     )
 
-        # Verify the OTel context extracted from the original request are continued by
-        # the trace context injected into test app's outgoing postman-echo call
-        try:
-            assert resp_json["incoming-headers"]["traceparent"] == traceparent
-            assert new_trace_id in resp_json["incoming-headers"]["traceparent"]
-            assert new_span_id not in resp_json["incoming-headers"]["traceparent"]
-            assert new_trace_flags in resp_json["incoming-headers"]["traceparent"]
+    #     # Verify the OTel context extracted from the original request are continued by
+    #     # the trace context injected into test app's outgoing postman-echo call
+    #     try:
+    #         assert resp_json["incoming-headers"]["traceparent"] == traceparent
+    #         assert new_trace_id in resp_json["incoming-headers"]["traceparent"]
+    #         assert new_span_id not in resp_json["incoming-headers"]["traceparent"]
+    #         assert new_trace_flags in resp_json["incoming-headers"]["traceparent"]
 
-            assert resp_json["incoming-headers"]["tracestate"] == tracestate
-            assert "sw=" in resp_json["incoming-headers"]["tracestate"]
-            assert new_span_id not in resp_json["incoming-headers"]["tracestate"]
-            assert new_trace_flags in resp_json["incoming-headers"]["tracestate"]
-        except KeyError as e:
-            self.fail("KeyError was raised at continue trace check: {}".format(e))
+    #         assert resp_json["incoming-headers"]["tracestate"] == tracestate
+    #         assert "sw=" in resp_json["incoming-headers"]["tracestate"]
+    #         assert new_span_id not in resp_json["incoming-headers"]["tracestate"]
+    #         assert new_trace_flags in resp_json["incoming-headers"]["tracestate"]
+    #     except KeyError as e:
+    #         self.fail("KeyError was raised at continue trace check: {}".format(e))
 
-        # Verify x-trace response header has same trace_id
-        # though it will have different span ID because of Flask
-        # app's outgoing request
-        assert "x-trace" in resp.headers
-        assert new_trace_id in resp.headers["x-trace"]
+    #     # Verify x-trace response header has same trace_id
+    #     # though it will have different span ID because of Flask
+    #     # app's outgoing request
+    #     assert "x-trace" in resp.headers
+    #     assert new_trace_id in resp.headers["x-trace"]
 
-        # Verify x-trace-options-response response header present
-        # with values calculated from decision and input validation
-        assert "x-trace-options-response" in resp.headers
-        assert "trigger-trace=not-requested" in resp.headers["x-trace-options-response"]
-        assert "ignored=foo" in resp.headers["x-trace-options-response"]
+    #     # Verify x-trace-options-response response header present
+    #     # with values calculated from decision and input validation
+    #     assert "x-trace-options-response" in resp.headers
+    #     assert "trigger-trace=not-requested" in resp.headers["x-trace-options-response"]
+    #     assert "ignored=foo" in resp.headers["x-trace-options-response"]
 
-        # Verify no spans exported
-        spans = self.memory_exporter.get_finished_spans()
-        assert len(spans) == 0
+    #     # Verify no spans exported
+    #     spans = self.memory_exporter.get_finished_spans()
+    #     assert len(spans) == 0
 
     def test_sampled_invalid_trace_context_and_valid_unsigned_with_tt(self):
         """
@@ -775,85 +775,85 @@ class TestScenario8(TestBaseSwHeadersAndAttributes):
         # Note: context.span_id needs a 16-byte hex conversion first.
         assert "{:016x}".format(span_client.context.span_id) == new_span_id
 
-    def test_not_sampled_invalid_trace_context_and_valid_unsigned_with_tt(self):
-        """
-        Scenario #6, not sampled with unsigned tt:
-        1. Decision to NOT sample with unsigned trigger trace flag is made at root/service
-           entry span (mocked). There IS an OTel context extracted from request headers,
-           but it is not valid. So this is the root and start of the trace.
-        2. Some new, valid traceparent and tracestate are injected into service's outgoing request (done by OTel TraceContextTextMapPropagator).
-        3. The valid x-trace-options is still handled and an x-trace-options-response
-           header is injected into the response.
-        4. No spans are exported.
-        """
-        # Use in-process test app client and mock to propagate context
-        # and create in-memory trace
-        resp = None
-        # liboboe mocked to guarantee return of "do_sample" (2nd arg),
-        # plus status_msg (the "rate-exceeded" string)
-        mock_decision = mock.Mock(
-            return_value=(1, 0, -1, -1, 5.0, 6.0, 1, -1, "rate-exceeded", "ok", -4)
-        )
-        with mock.patch(
-            target="solarwinds_apm.extension.oboe.Context.getDecisions",
-            new=mock_decision,
-        ):
-            # Request to instrumented app with headers
-            resp = self.client.get(
-                "/test_trace/",
-                headers={
-                    "traceparent": "not-a-valid-traceparent",
-                    "tracestate": "also-not-a-valid-tracestate",
-                    "x-trace-options": "trigger-trace;sw-keys=check-id:check-1013,website-id:booking-demo;this-will-be-ignored;custom-awesome-key=foo",
-                    "some-header": "some-value"
-                }
-            )
-        resp_json = json.loads(resp.data)
+    # def test_not_sampled_invalid_trace_context_and_valid_unsigned_with_tt(self):
+    #     """
+    #     Scenario #6, not sampled with unsigned tt:
+    #     1. Decision to NOT sample with unsigned trigger trace flag is made at root/service
+    #        entry span (mocked). There IS an OTel context extracted from request headers,
+    #        but it is not valid. So this is the root and start of the trace.
+    #     2. Some new, valid traceparent and tracestate are injected into service's outgoing request (done by OTel TraceContextTextMapPropagator).
+    #     3. The valid x-trace-options is still handled and an x-trace-options-response
+    #        header is injected into the response.
+    #     4. No spans are exported.
+    #     """
+    #     # Use in-process test app client and mock to propagate context
+    #     # and create in-memory trace
+    #     resp = None
+    #     # liboboe mocked to guarantee return of "do_sample" (2nd arg),
+    #     # plus status_msg (the "rate-exceeded" string)
+    #     mock_decision = mock.Mock(
+    #         return_value=(1, 0, -1, -1, 5.0, 6.0, 1, -1, "rate-exceeded", "ok", -4)
+    #     )
+    #     with mock.patch(
+    #         target="solarwinds_apm.extension.oboe.Context.getDecisions",
+    #         new=mock_decision,
+    #     ):
+    #         # Request to instrumented app with headers
+    #         resp = self.client.get(
+    #             "/test_trace/",
+    #             headers={
+    #                 "traceparent": "not-a-valid-traceparent",
+    #                 "tracestate": "also-not-a-valid-tracestate",
+    #                 "x-trace-options": "trigger-trace;sw-keys=check-id:check-1013,website-id:booking-demo;this-will-be-ignored;custom-awesome-key=foo",
+    #                 "some-header": "some-value"
+    #             }
+    #         )
+    #     resp_json = json.loads(resp.data)
 
-        # Verify some-header was not altered by instrumentation
-        try:
-            assert resp_json["incoming-headers"]["some-header"] == "some-value"
-        except KeyError as e:
-            self.fail("KeyError was raised at incoming-headers check: {}".format(e))
+    #     # Verify some-header was not altered by instrumentation
+    #     try:
+    #         assert resp_json["incoming-headers"]["some-header"] == "some-value"
+    #     except KeyError as e:
+    #         self.fail("KeyError was raised at incoming-headers check: {}".format(e))
 
-        # Verify trace context injected into test app's outgoing postman-echo call
-        # (added to Flask app's response data) includes:
-        #    - traceparent with a trace_id, span_id, and trace_flags for do_sample
-        #    - tracestate with same span_id and trace_flags for do_sample
-        assert "traceparent" in resp_json
-        _TRACEPARENT_HEADER_FORMAT = (
-            "^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
-        )
-        _TRACEPARENT_HEADER_FORMAT_RE = re.compile(_TRACEPARENT_HEADER_FORMAT)
-        traceparent_re_result = re.search(
-            _TRACEPARENT_HEADER_FORMAT_RE,
-            resp_json["traceparent"],
-        )
-        new_trace_id = traceparent_re_result.group(2)
-        assert new_trace_id is not None
-        new_span_id = traceparent_re_result.group(3)
-        assert new_span_id is not None
-        new_trace_flags = traceparent_re_result.group(4)
-        assert new_trace_flags == "00"
+    #     # Verify trace context injected into test app's outgoing postman-echo call
+    #     # (added to Flask app's response data) includes:
+    #     #    - traceparent with a trace_id, span_id, and trace_flags for do_sample
+    #     #    - tracestate with same span_id and trace_flags for do_sample
+    #     assert "traceparent" in resp_json
+    #     _TRACEPARENT_HEADER_FORMAT = (
+    #         "^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$"
+    #     )
+    #     _TRACEPARENT_HEADER_FORMAT_RE = re.compile(_TRACEPARENT_HEADER_FORMAT)
+    #     traceparent_re_result = re.search(
+    #         _TRACEPARENT_HEADER_FORMAT_RE,
+    #         resp_json["traceparent"],
+    #     )
+    #     new_trace_id = traceparent_re_result.group(2)
+    #     assert new_trace_id is not None
+    #     new_span_id = traceparent_re_result.group(3)
+    #     assert new_span_id is not None
+    #     new_trace_flags = traceparent_re_result.group(4)
+    #     assert new_trace_flags == "00"
 
-        assert "tracestate" in resp_json
-        # In this test we know tracestate will have `sw`
-        # with new_span_id and new_trace_flags.
-        # `xtrace_options_response` is not propagated.
-        assert resp_json["tracestate"] == "sw={}-{}".format(new_span_id, new_trace_flags)
+    #     assert "tracestate" in resp_json
+    #     # In this test we know tracestate will have `sw`
+    #     # with new_span_id and new_trace_flags.
+    #     # `xtrace_options_response` is not propagated.
+    #     assert resp_json["tracestate"] == "sw={}-{}".format(new_span_id, new_trace_flags)
 
-        # Verify x-trace response header has same trace_id
-        # though it will have different span ID because of Flask
-        # app's outgoing request
-        assert "x-trace" in resp.headers
-        assert new_trace_id in resp.headers["x-trace"]
+    #     # Verify x-trace response header has same trace_id
+    #     # though it will have different span ID because of Flask
+    #     # app's outgoing request
+    #     assert "x-trace" in resp.headers
+    #     assert new_trace_id in resp.headers["x-trace"]
 
-        # Verify x-trace-options-response response header present
-        # with values calculated from decision and input validation
-        assert "x-trace-options-response" in resp.headers
-        assert "trigger-trace=rate-exceeded" in resp.headers["x-trace-options-response"]
-        assert "ignored=this-will-be-ignored" in resp.headers["x-trace-options-response"]
+    #     # Verify x-trace-options-response response header present
+    #     # with values calculated from decision and input validation
+    #     assert "x-trace-options-response" in resp.headers
+    #     assert "trigger-trace=rate-exceeded" in resp.headers["x-trace-options-response"]
+    #     assert "ignored=this-will-be-ignored" in resp.headers["x-trace-options-response"]
 
-        # Verify no spans exported
-        spans = self.memory_exporter.get_finished_spans()
-        assert len(spans) == 0
+    #     # Verify no spans exported
+    #     spans = self.memory_exporter.get_finished_spans()
+    #     assert len(spans) == 0

@@ -416,6 +416,7 @@ class SolarWindsConfigurator(_OTelSDKConfigurator):
             "grpc_proxy": apm_config.get("proxy"),
             "stdout_clear_nonblocking": 0,
             "metric_format": apm_config.metric_format,
+            "log_type": 0,
         }
 
         return apm_config.extension.Reporter(**reporter_kwargs)

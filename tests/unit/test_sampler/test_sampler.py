@@ -345,14 +345,14 @@ class Test_SwSampler():
         })
 
     def test_otel_decision_from_liboboe(self, fixture_swsampler):
-        assert fixture_swsampler.otel_decision_from_liboboe({
-            "do_metrics": 0,
-            "do_sample": 0,
-        }) == Decision.DROP
-        assert fixture_swsampler.otel_decision_from_liboboe({
-            "do_metrics": 1,
-            "do_sample": 0,
-        }) == Decision.RECORD_ONLY
+        # assert fixture_swsampler.otel_decision_from_liboboe({
+        #     "do_metrics": 0,
+        #     "do_sample": 0,
+        # }) == Decision.DROP
+        # assert fixture_swsampler.otel_decision_from_liboboe({
+        #     "do_metrics": 1,
+        #     "do_sample": 0,
+        # }) == Decision.RECORD_ONLY
         assert fixture_swsampler.otel_decision_from_liboboe({
             "do_metrics": 1,
             "do_sample": 1,

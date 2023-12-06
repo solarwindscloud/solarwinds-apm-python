@@ -40,5 +40,6 @@ class TestConfiguratorInitializeReporter:
                 "grpc_proxy": "foo",
                 "stdout_clear_nonblocking": 0,
                 "metric_format": "bar",
+                "log_type": 0,
             }
         )
