@@ -33,6 +33,7 @@ from solarwinds_apm.apm_constants import (
     INTL_SWO_DEFAULT_PROPAGATORS,
     INTL_SWO_DEFAULT_TRACES_EXPORTER,
 )
+from solarwinds_apm.apm_logging import _stream_handler
 from solarwinds_apm.version import __version__ as apm_version
 
 _EXPORTER_BY_OTLP_PROTOCOL = {
@@ -41,6 +42,9 @@ _EXPORTER_BY_OTLP_PROTOCOL = {
 }
 
 logger = logging.getLogger(__name__)
+# This startup component must always log
+if not logger.hasHandlers():
+    logger.addHandler(_stream_handler)
 
 
 class SolarWindsDistro(BaseDistro):

@@ -54,6 +54,7 @@ from solarwinds_apm.apm_constants import (
     INTL_SWO_SUPPORT_EMAIL,
 )
 from solarwinds_apm.apm_fwkv_manager import SolarWindsFrameworkKvManager
+from solarwinds_apm.apm_logging import _stream_handler
 from solarwinds_apm.apm_oboe_codes import OboeReporterCode
 from solarwinds_apm.apm_txname_manager import SolarWindsTxnNameManager
 from solarwinds_apm.response_propagator import (
@@ -73,6 +74,9 @@ if TYPE_CHECKING:
 
 solarwinds_apm_logger = apm_logging.logger
 logger = logging.getLogger(__name__)
+# This startup component must always log
+if not logger.hasHandlers():
+    logger.addHandler(_stream_handler)
 
 
 class SolarWindsConfigurator(_OTelSDKConfigurator):

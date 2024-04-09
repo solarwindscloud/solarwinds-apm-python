@@ -38,6 +38,10 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
+from opentelemetry.instrumentation.logging.environment_variables import (
+    OTEL_PYTHON_LOG_CORRELATION,
+)
+
 
 class ApmLoggingType:
     """Mapping of supported solarwinds_apm library log types"""
@@ -142,6 +146,9 @@ def _get_logger():
         - When _get_logger is invoked, SW_APM_DEBUG_LEVEL is checked and the logging level will be set to the
           value provided by the variable. If an invalid value has been provided, the logging level will not be changed.
     (2) By invoking set_sw_log_level
+
+    Special case: if the environment variable OTEL_PYTHON_LOG_CORRELATION is set, then APM Python
+    will not set up its own stream handling.
     """
 
     # create base logger for solarwinds_apm package
@@ -163,11 +170,15 @@ def _get_logger():
 
     _logger.setLevel(ApmLoggingLevel.logging_map[log_level])
 
-    if log_level != ApmLoggingLevel.debug_levels["OBOE_DEBUG_DISABLE"]:
-        _logger.addHandler(_stream_handler)
-    else:
-        _logger.propagate = False
-        _logger.addHandler(logging.NullHandler())
+    upstream_log_correlation = (
+        os.environ.get(OTEL_PYTHON_LOG_CORRELATION, "false").lower() == "true"
+    )
+    if not upstream_log_correlation:
+        if log_level != ApmLoggingLevel.debug_levels["OBOE_DEBUG_DISABLE"]:
+            _logger.addHandler(_stream_handler)
+        else:
+            _logger.propagate = False
+            _logger.addHandler(logging.NullHandler())
 
     return _logger
 

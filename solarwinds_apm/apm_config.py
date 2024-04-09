@@ -33,9 +33,13 @@ from solarwinds_apm.apm_constants import (
     INTL_SWO_SUPPORT_EMAIL,
     INTL_SWO_TRACECONTEXT_PROPAGATOR,
 )
+from solarwinds_apm.apm_logging import _stream_handler
 from solarwinds_apm.certs.ao_issuer_ca import get_public_cert
 
 logger = logging.getLogger(__name__)
+# This startup component must always log
+if not logger.hasHandlers():
+    logger.addHandler(_stream_handler)
 
 
 class OboeTracingMode:
