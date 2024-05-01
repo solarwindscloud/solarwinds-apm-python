@@ -67,10 +67,11 @@ class OboeTracingMode:
 class SolarWindsApmConfig:
     """SolarWinds APM Configuration Class
     The precedence: in-code keyword arguments > Environment Variables > config file > default values.
-    Note that oboe doesn't read configurations by itself. The Python agent needs to
-    read environment variables and/or config files and pass them into oboe. This is
-    done only once during the initialization and the properties cannot be refreshed.
+
+    TODO update docstring
     """
+
+    # TODO Rm/Subclass (shared) responsibilities of UserConfig
 
     _CONFIG_FILE_DEFAULT = "./solarwinds-apm-config.json"
     _DELIMITER = "."

@@ -56,6 +56,7 @@ from solarwinds_apm.apm_constants import (
 from solarwinds_apm.apm_fwkv_manager import SolarWindsFrameworkKvManager
 from solarwinds_apm.apm_oboe_codes import OboeReporterCode
 from solarwinds_apm.apm_txname_manager import SolarWindsTxnNameManager
+from solarwinds_apm.apm_userconfig import extract_user_config
 from solarwinds_apm.response_propagator import (
     SolarWindsTraceResponsePropagator,
 )
@@ -88,6 +89,10 @@ class SolarWindsConfigurator(_OTelSDKConfigurator):
         """Configure SolarWinds APM and OTel components"""
         apm_txname_manager = SolarWindsTxnNameManager()
         apm_fwkv_manager = SolarWindsFrameworkKvManager()
+
+        # TODO Use to init/merge/?? with ApmConfig
+        user_config = extract_user_config()
+
         apm_config = SolarWindsApmConfig()
         oboe_api = apm_config.oboe_api
 

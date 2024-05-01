@@ -19,6 +19,7 @@ from opentelemetry.environment_variables import (
 from opentelemetry.instrumentation.distro import BaseDistro
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.logging.environment_variables import (
+    OTEL_PYTHON_LOG_CORRELATION,
     OTEL_PYTHON_LOG_FORMAT,
 )
 from opentelemetry.instrumentation.version import __version__ as inst_version
@@ -33,6 +34,7 @@ from solarwinds_apm.apm_constants import (
     INTL_SWO_DEFAULT_PROPAGATORS,
     INTL_SWO_DEFAULT_TRACES_EXPORTER,
 )
+from solarwinds_apm.apm_userconfig import SolarWindsApmUserConfig
 from solarwinds_apm.version import __version__ as apm_version
 
 _EXPORTER_BY_OTLP_PROTOCOL = {
@@ -65,9 +67,34 @@ class SolarWindsDistro(BaseDistro):
         self._log_python_runtime()
         logger.info("OpenTelemetry %s/%s", sdk_version, inst_version)
 
+    def _set_user_config(self):
+        """Create UserConfig and set in environment for APM components configuration"""
+        user_config = SolarWindsApmUserConfig()
+        user_config.write_to_env_file()
+        return user_config
+
     def _configure(self, **kwargs):
         """Configure default OTel exporter and propagators"""
         self._log_runtime()
+
+        # TODO available to load_instrumentor
+        self._set_user_config()
+
+        # Set log format depending on if log correlation enabled,
+        # for APM Python OR logging instrumentor
+        otel_log_correlation = (
+            environ.get(OTEL_PYTHON_LOG_CORRELATION, "false").lower() == "true"
+        )
+        if otel_log_correlation:
+            environ.setdefault(
+                OTEL_PYTHON_LOG_FORMAT,
+                "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s trace_flags=%(otelTraceSampled)02d resource.service.name=%(otelServiceName)s] - %(message)s",
+            )
+        else:
+            environ.setdefault(
+                OTEL_PYTHON_LOG_FORMAT,
+                "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] - %(message)s",
+            )
 
         otlp_protocol = environ.get(OTEL_EXPORTER_OTLP_PROTOCOL)
         if otlp_protocol in _EXPORTER_BY_OTLP_PROTOCOL:
@@ -92,10 +119,6 @@ class SolarWindsDistro(BaseDistro):
         environ.setdefault(
             OTEL_PROPAGATORS, ",".join(INTL_SWO_DEFAULT_PROPAGATORS)
         )
-        environ.setdefault(
-            OTEL_PYTHON_LOG_FORMAT,
-            "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s trace_flags=%(otelTraceSampled)02d resource.service.name=%(otelServiceName)s] - %(message)s",
-        )
 
     def load_instrumentor(self, entry_point: EntryPoint, **kwargs):
         """Takes a collection of instrumentation entry points
@@ -103,6 +126,14 @@ class SolarWindsDistro(BaseDistro):
         on each one. This is a method override to pass additional
         arguments to each entry point.
         """
+        # TODO
+        # Set log_handlers for logging instrumentor. Assumes instrumentor
+        # only creates handler if context correlation enabled. Assumes
+        # kwargs ignored if not implemented for current instrumentation library
+
+        # TODO
+        # Use file handler if filepath configured by user
+
         # Set enable for sqlcommenter. Assumes kwargs ignored if not
         # implemented for current instrumentation library
         if self.enable_commenter():

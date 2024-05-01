@@ -4,6 +4,7 @@ opentelemetry-instrumentation-requests==0.41b0
 pytest
 pytest-cov
 pytest-mock
+python-dotenv
 requests
 flask<3.0.0
 werkzeug

@@ -4,6 +4,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
+INTL_SWO_USER_CONFIG_PATH = "./_solarwinds-apm-config.env"
 INTL_SWO_AO_COLLECTOR = "collector.appoptics.com"
 INTL_SWO_AO_STG_COLLECTOR = "collector-stg.appoptics.com"
 INTL_SWO_CURRENT_TRACE_ENTRY_SPAN_ID = "sw-current-trace-entry-span-id"
