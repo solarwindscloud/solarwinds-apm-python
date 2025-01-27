@@ -44,8 +44,8 @@ requires-python = ">=3.8"
 dependencies = [
     'opentelemetry-api == 1.28.2',
     'opentelemetry-sdk == 1.28.2',
-    'opentelemetry-exporter-otlp == 1.28.2',
-    'opentelemetry-instrumentation == 0.49b2',
+    'opentelemetry-exporter-otlp == 1.29.0',
+    'opentelemetry-instrumentation == 0.50b0',
     'opentelemetry-instrumentation-logging == 0.49b2',
 ]
 
