@@ -326,6 +326,7 @@ class SolarWindsApmConfig:
             # SolarWindsDistro._configure does setdefault before this is called
             environ_propagators = os.environ.get(
                 OTEL_PROPAGATORS,
+                "",
             ).split(",")
             # If not using the default propagators,
             # can any arbitrary list BUT
