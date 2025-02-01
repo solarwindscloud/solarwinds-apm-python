@@ -13,8 +13,6 @@ from os import environ
 from typing import Any
 
 from opentelemetry.environment_variables import (
-    OTEL_LOGS_EXPORTER,
-    OTEL_METRICS_EXPORTER,
     OTEL_PROPAGATORS,
     OTEL_TRACES_EXPORTER,
 )
@@ -24,18 +22,7 @@ from opentelemetry.instrumentation.logging.environment_variables import (
     OTEL_PYTHON_LOG_FORMAT,
 )
 from opentelemetry.instrumentation.version import __version__ as inst_version
-from opentelemetry.sdk.environment_variables import (
-    OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,
-    OTEL_EXPORTER_OTLP_LOGS_HEADERS,
-    OTEL_EXPORTER_OTLP_LOGS_PROTOCOL,
-    OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,
-    OTEL_EXPORTER_OTLP_METRICS_HEADERS,
-    OTEL_EXPORTER_OTLP_METRICS_PROTOCOL,
-    OTEL_EXPORTER_OTLP_PROTOCOL,
-    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
-    OTEL_EXPORTER_OTLP_TRACES_HEADERS,
-    OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,
-)
+from opentelemetry.sdk.environment_variables import OTEL_EXPORTER_OTLP_PROTOCOL
 from opentelemetry.sdk.version import __version__ as sdk_version
 from opentelemetry.util._importlib_metadata import EntryPoint
 
@@ -99,112 +86,69 @@ class SolarWindsDistro(BaseDistro):
             return None
         return key_parts[0]
 
-    def _configure_logs_export_env_defaults(
+    def _configure_otlp_env_defaults(
+        self,
+        signal_type: str,
+        header_token: str,
+        otlp_protocol: str,
+    ) -> None:
+        """Configure env defaults for OTLP signal export by HTTP or gRPC to SWO"""
+        protocol_env_var = f"OTEL_EXPORTER_OTLP_{signal_type.upper()}_PROTOCOL"
+        exporter_env_var = f"OTEL_{signal_type.upper()}_EXPORTER"
+        endpoint_env_var = f"OTEL_EXPORTER_OTLP_{signal_type.upper()}_ENDPOINT"
+        headers_env_var = f"OTEL_EXPORTER_OTLP_{signal_type.upper()}_HEADERS"
+
+        environ.setdefault(protocol_env_var, otlp_protocol)
+        environ.setdefault(
+            exporter_env_var, _EXPORTER_BY_OTLP_PROTOCOL[otlp_protocol]
+        )
+        environ.setdefault(
+            endpoint_env_var,
+            f"{INTL_SWO_DEFAULT_OTLP_COLLECTOR}/v1/{signal_type}",
+        )
+        if header_token:
+            environ.setdefault(
+                headers_env_var, f"authorization=Bearer%20{header_token}"
+            )
+
+    def _configure_logs_export_otlp_env_defaults(
         self,
         header_token: str,
         otlp_protocol: str,
     ) -> None:
         """Configure env defaults for OTLP logs signal export by HTTP or gRPC to SWO"""
-        if otlp_protocol in _EXPORTER_BY_OTLP_PROTOCOL:
-            environ.setdefault(OTEL_EXPORTER_OTLP_LOGS_PROTOCOL, otlp_protocol)
-            environ.setdefault(
-                OTEL_LOGS_EXPORTER, _EXPORTER_BY_OTLP_PROTOCOL[otlp_protocol]
-            )
-            environ.setdefault(
-                OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,
-                f"{INTL_SWO_DEFAULT_OTLP_COLLECTOR}/v1/logs",
-            )
-            if header_token:
-                environ.setdefault(
-                    OTEL_EXPORTER_OTLP_LOGS_HEADERS,
-                    f"authorization=Bearer%20{header_token}",
-                )
-        else:
-            logger.debug(
-                "Tried to setdefault for OTLP logs with invalid protocol. Skipping."
-            )
+        self._configure_otlp_env_defaults("logs", header_token, otlp_protocol)
 
-    def _configure_metrics_export_env_defaults(
+    def _configure_metrics_export_otlp_env_defaults(
         self,
         header_token: str,
         otlp_protocol: str,
     ) -> None:
         """Configure env defaults for OTLP metrics signal export by HTTP or gRPC to SWO"""
-        if otlp_protocol in _EXPORTER_BY_OTLP_PROTOCOL:
-            environ.setdefault(
-                OTEL_EXPORTER_OTLP_METRICS_PROTOCOL, otlp_protocol
-            )
-            environ.setdefault(
-                OTEL_METRICS_EXPORTER,
-                _EXPORTER_BY_OTLP_PROTOCOL[otlp_protocol],
-            )
-            environ.setdefault(
-                OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,
-                f"{INTL_SWO_DEFAULT_OTLP_COLLECTOR}/v1/metrics",
-            )
-            if header_token:
-                environ.setdefault(
-                    OTEL_EXPORTER_OTLP_METRICS_HEADERS,
-                    f"authorization=Bearer%20{header_token}",
-                )
-        else:
-            logger.debug(
-                "Tried to setdefault for OTLP metrics with invalid protocol. Skipping."
-            )
+        self._configure_otlp_env_defaults(
+            "metrics", header_token, otlp_protocol
+        )
 
-    def _configure_traces_export_env_defaults(
+    def _configure_traces_export_otlp_env_defaults(
         self,
         header_token: str,
         otlp_protocol: Any = None,
     ) -> None:
         """Configure env defaults for OTLP traces signal export by APM protocol
         to SWO, else follow provided OTLP protocol (HTTP or gRPC)"""
-        if otlp_protocol in _EXPORTER_BY_OTLP_PROTOCOL:
-            environ.setdefault(
-                OTEL_EXPORTER_OTLP_TRACES_PROTOCOL, otlp_protocol
-            )
-            environ.setdefault(
-                OTEL_TRACES_EXPORTER, _EXPORTER_BY_OTLP_PROTOCOL[otlp_protocol]
-            )
-            environ.setdefault(
-                OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
-                f"{INTL_SWO_DEFAULT_OTLP_COLLECTOR}/v1/traces",
-            )
-            if header_token:
-                environ.setdefault(
-                    OTEL_EXPORTER_OTLP_TRACES_HEADERS,
-                    f"authorization=Bearer%20{header_token}",
-                )
-        else:
-            logger.debug(
-                "Called to setdefault for OTLP traces with empty or invalid protocol. Defaulting to SolarWinds exporter."
-            )
-            environ.setdefault(
-                OTEL_TRACES_EXPORTER, INTL_SWO_DEFAULT_TRACES_EXPORTER
-            )
-
-    def _configure(self, **kwargs):
-        """Configure default OTel exporters and propagators"""
-        self._log_runtime()
-
-        header_token = self._get_token_from_service_key()
-        if not header_token:
-            logger.debug("Setting OTLP export defaults without SWO token")
-
-        # If users set OTEL_EXPORTER_OTLP_PROTOCOL
-        # as one of Otel SDK's `http/protobuf` or `grpc`,
-        # then the matching exporters are mapped
-        otlp_protocol = environ.get(OTEL_EXPORTER_OTLP_PROTOCOL)
-        # For traces, the default is SWO APM - see helper
-        self._configure_traces_export_env_defaults(header_token, otlp_protocol)
-        # For metrics and logs, the default is `http/protobuf`
-        if otlp_protocol not in _EXPORTER_BY_OTLP_PROTOCOL:
-            otlp_protocol = "http/protobuf"
-        self._configure_logs_export_env_defaults(header_token, otlp_protocol)
-        self._configure_metrics_export_env_defaults(
-            header_token, otlp_protocol
+        self._configure_otlp_env_defaults(
+            "traces", header_token, otlp_protocol
         )
 
+    def _configure(self, **kwargs):
+        """Configure default OTel components for APM Python.
+
+        This is a sitecustomize callee of the opentelemetry-instrument entrypoint.
+        """
+        self._log_runtime()
+
+        # Propagators, log format defaults and semconv the same
+        # whether APM Python uses OTLP and/or legacy mode
         environ.setdefault(
             OTEL_PROPAGATORS, ",".join(INTL_SWO_DEFAULT_PROPAGATORS)
         )
@@ -213,10 +157,53 @@ class SolarWindsDistro(BaseDistro):
             OTEL_PYTHON_LOG_FORMAT,
             "%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s trace_flags=%(otelTraceSampled)02d resource.service.name=%(otelServiceName)s] - %(message)s",
         )
-
         # TODO: Support other signal types when available
         # Always opt into new semconv for all instrumentors (if supported)
         environ["OTEL_SEMCONV_STABILITY_OPT_IN"] = self.get_semconv_opt_in()
+
+        # setdefaults for OTLP export if protocol is unset or valid,
+        # with the exception of OTEL_TRACES_EXPORTER if legacy.
+        # Does not setdefaults if invalid protocol.
+        # All values can still be configured by user (SolarWindsApmConfig).
+        environ.setdefault(
+            OTEL_EXPORTER_OTLP_PROTOCOL,
+            "http/protobuf",
+        )
+        # Protocol is the above default or what user has set
+        otlp_protocol = environ.get(OTEL_EXPORTER_OTLP_PROTOCOL)
+
+        is_legacy = SolarWindsApmConfig.calculate_is_legacy()
+
+        if otlp_protocol:
+            if otlp_protocol in _EXPORTER_BY_OTLP_PROTOCOL:
+                header_token = self._get_token_from_service_key()
+                if not header_token:
+                    logger.debug(
+                        "Setting OTLP export defaults without SWO token"
+                    )
+
+                if is_legacy:
+                    environ.setdefault(
+                        OTEL_TRACES_EXPORTER, INTL_SWO_DEFAULT_TRACES_EXPORTER
+                    )
+                else:
+                    self._configure_traces_export_otlp_env_defaults(
+                        header_token, otlp_protocol
+                    )
+
+                # We do OTLP export setdefault if legacy or not
+                # in case SW_APM_EXPORT_METRICS_ENABLED
+                self._configure_logs_export_otlp_env_defaults(
+                    header_token, otlp_protocol
+                )
+                self._configure_metrics_export_otlp_env_defaults(
+                    header_token, otlp_protocol
+                )
+
+            else:
+                logger.warning(
+                    "Invalid OTLP export protocol configured. Skipping setting of default export configuration."
+                )
 
     def load_instrumentor(self, entry_point: EntryPoint, **kwargs):
         """Takes a collection of instrumentation entry points
