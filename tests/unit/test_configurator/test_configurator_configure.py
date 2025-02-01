@@ -20,6 +20,7 @@ class TestConfiguratorConfigure:
         mock_apmconfig = mocker.Mock(
             **{
                 "is_lambda": True,
+                "get": mocker.Mock(return_value=False),
             }
         )
         apmconfig_init = mocker.patch(

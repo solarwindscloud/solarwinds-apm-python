@@ -131,6 +131,7 @@ def get_apmconfig_mocks(
     md_is_valid=True,
     export_logs_enabled=True,
     export_metrics_enabled=True,
+    legacy=False,
 ):
     # mock the extension that is linked to ApmConfig
     mock_ext_config = mocker.Mock()
@@ -184,6 +185,8 @@ def get_apmconfig_mocks(
             return export_metrics_enabled
         elif param == "export_logs_enabled":
             return export_logs_enabled
+        elif param == "legacy":
+            return legacy
         else:
             return "foo"
 
@@ -219,6 +222,16 @@ def mock_apmconfig_enabled(mocker):
         )
     )
 
+@pytest.fixture(name="mock_apmconfig_enabled_legacy")
+def mock_apmconfig_enabled_legacy(mocker):
+    return mocker.patch(
+        "solarwinds_apm.configurator.SolarWindsApmConfig",
+        get_apmconfig_mocks(
+            mocker,
+            legacy=True,
+        )
+    )
+
 @pytest.fixture(name="mock_apmconfig_enabled_md_invalid")
 def mock_apmconfig_enabled_md_invalid(mocker):
     return mocker.patch(
@@ -226,6 +239,7 @@ def mock_apmconfig_enabled_md_invalid(mocker):
         get_apmconfig_mocks(
             mocker,
             md_is_valid=False,
+            legacy=True,
         )
     )
 

@@ -110,8 +110,8 @@ class SolarWindsConfigurator(_OTelSDKConfigurator):
             oboe_api,
         )
 
-        if apm_config.is_lambda:
-            logger.debug("No init event in lambda")
+        if apm_config.get("legacy") is False:
+            logger.debug("No init event outside legacy mode")
             return
 
         # Report reporter init status event after everything is done.
@@ -808,8 +808,8 @@ class SolarWindsConfigurator(_OTelSDKConfigurator):
         keys: dict = None,
     ) -> Any:
         """Create a Reporter init event if the reporter is ready."""
-        if apm_config.is_lambda:
-            logger.debug("Skipping init event in lambda")
+        if apm_config.get("legacy") is False:
+            logger.debug("Skipping init event outside legacy mode")
             return None
 
         reporter_ready = False
