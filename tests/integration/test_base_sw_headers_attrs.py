@@ -87,6 +87,9 @@ class TestBaseSwHeadersAndAttributes(TestBase):
         # Set APM service key - not valid, but we mock liboboe anyway
         os.environ["SW_APM_SERVICE_KEY"] = "foo:bar"
 
+        # Set APM to legacy mode
+        os.environ["SW_APM_LEGACY"] = "true"
+
         # Load Distro
         SolarWindsDistro().configure()
         assert os.environ["OTEL_PROPAGATORS"] == "tracecontext,baggage,solarwinds_propagator"
@@ -138,3 +141,5 @@ class TestBaseSwHeadersAndAttributes(TestBase):
     def tearDown(self):
         """Teardown called after each test scenario"""
         self.memory_exporter.clear()
+        del os.environ["SW_APM_SERVICE_KEY"]
+        del os.environ["SW_APM_LEGACY"]
