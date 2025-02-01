@@ -15,6 +15,8 @@ from .fixtures.cnf_dict import (
     fixture_cnf_dict_enabled_false_mixed_case,
 )
 
+# pylint: disable=unused-import
+from .fixtures.env_vars import fixture_mock_env_vars
 
 class TestSolarWindsApmConfigAgentEnabled:
     def test_calculate_agent_enabled_service_key_missing(self, mocker):
@@ -58,6 +60,7 @@ class TestSolarWindsApmConfigAgentEnabled:
         self,
         mocker,
         fixture_cnf_dict,
+        mock_env_vars
     ):
         # Save any service key in os for later
         old_service_key = os.environ.get("SW_APM_SERVICE_KEY", None)
@@ -114,6 +117,7 @@ class TestSolarWindsApmConfigAgentEnabled:
         self,
         mocker,
         fixture_cnf_dict,
+        mock_env_vars,
     ):
         # Save any service key in os for later
         old_service_key = os.environ.get("SW_APM_SERVICE_KEY", None)
@@ -196,7 +200,11 @@ class TestSolarWindsApmConfigAgentEnabled:
         assert not resulting_config._calculate_agent_enabled()
         assert resulting_config.service_name == ""
 
-    def test_calculate_agent_enabled_service_key_ok(self, mocker):
+    def test_calculate_agent_enabled_service_key_ok(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "valid:key",
         })
@@ -225,7 +233,11 @@ class TestSolarWindsApmConfigAgentEnabled:
         assert resulting_config._calculate_agent_enabled()
         assert resulting_config.service_name == "key"
 
-    def test_calculate_agent_enabled_env_var_true(self, mocker):
+    def test_calculate_agent_enabled_env_var_true(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "valid:key",
             "SW_APM_AGENT_ENABLED": "true",
@@ -399,6 +411,7 @@ class TestSolarWindsApmConfigAgentEnabled:
         self,
         mocker,
         fixture_cnf_dict_enabled_false,
+        mock_env_vars,
     ):
         mock_entry_points = mocker.patch(
             "solarwinds_apm.apm_config.entry_points"
@@ -477,7 +490,11 @@ class TestSolarWindsApmConfigAgentEnabled:
         assert not resulting_config.agent_enabled
         assert resulting_config.service_name == ""
 
-    def test_calculate_agent_enabled_ok_all_env_vars(self, mocker):
+    def test_calculate_agent_enabled_ok_all_env_vars(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "OTEL_PROPAGATORS": "foo,tracecontext,bar,solarwinds_propagator",
             "OTEL_TRACES_EXPORTER": "solarwinds_exporter,foo",
@@ -597,7 +614,11 @@ class TestSolarWindsApmConfigAgentEnabled:
         assert not resulting_config._calculate_agent_enabled()
         assert resulting_config.service_name == ""
 
-    def test_calculate_agent_enabled_sw_after_baggage_propagator(self, mocker):
+    def test_calculate_agent_enabled_sw_after_baggage_propagator(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "OTEL_PROPAGATORS": "tracecontext,baggage,solarwinds_propagator",
             "SW_APM_SERVICE_KEY": "valid:key",
@@ -619,7 +640,11 @@ class TestSolarWindsApmConfigAgentEnabled:
         assert resulting_config._calculate_agent_enabled()
         assert resulting_config.service_name == "key"
 
-    def test_calculate_agent_enabled_sw_but_no_such_other_exporter(self, mocker):
+    def test_calculate_agent_enabled_sw_but_no_such_other_exporter(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "OTEL_TRACES_EXPORTER": "solarwinds_exporter,not-valid",
             "SW_APM_SERVICE_KEY": "valid:key",
@@ -647,7 +672,11 @@ class TestSolarWindsApmConfigAgentEnabled:
         assert not resulting_config._calculate_agent_enabled()
         assert resulting_config.service_name == ""
 
-    def test_calculate_agent_enabled_sw_and_two_other_valid_exporters(self, mocker):
+    def test_calculate_agent_enabled_sw_and_two_other_valid_exporters(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "OTEL_TRACES_EXPORTER": "foo,solarwinds_exporter,bar",
             "SW_APM_SERVICE_KEY": "valid:key",

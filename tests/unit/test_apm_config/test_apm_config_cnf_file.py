@@ -34,6 +34,7 @@ class TestSolarWindsApmConfigCnfFile:
     def test_get_cnf_dict_custom_path_no_file(
         self,
         mocker,
+        mock_env_vars,
     ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "valid:key-service-name",
@@ -51,6 +52,7 @@ class TestSolarWindsApmConfigCnfFile:
         self,
         mocker,
         fixture_cnf_file_invalid_json,
+        mock_env_vars,
     ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "valid:key-service-name",
@@ -68,6 +70,7 @@ class TestSolarWindsApmConfigCnfFile:
         self,
         mocker,
         fixture_cnf_file,
+        mock_env_vars,
     ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "valid:key-service-name",
@@ -85,6 +88,7 @@ class TestSolarWindsApmConfigCnfFile:
         self,
         mocker,
         fixture_cnf_dict,
+        mock_env_vars,
     ):
         # Save any collector in os for later
         old_collector = os.environ.get("SW_APM_COLLECTOR", None)
@@ -154,6 +158,7 @@ class TestSolarWindsApmConfigCnfFile:
     def test_update_with_cnf_file_mostly_invalid(
         self,
         mocker,
+        mock_env_vars,
     ):
         # Save any collector in os for later
         old_collector = os.environ.get("SW_APM_COLLECTOR", None)

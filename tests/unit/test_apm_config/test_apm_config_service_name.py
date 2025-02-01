@@ -10,6 +10,8 @@ from opentelemetry.sdk.resources import Resource
 
 from solarwinds_apm import apm_config
 
+# pylint: disable=unused-import
+from .fixtures.env_vars import fixture_mock_env_vars
 
 class TestSolarWindsApmConfigServiceName:
     def test__calculate_service_name_is_lambda(self, mocker):
@@ -75,6 +77,7 @@ class TestSolarWindsApmConfigServiceNameApmProto:
     def test__calculate_service_name_apm_proto_no_otel_service_name(
         self,
         mocker,
+        mock_env_vars,
     ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
@@ -89,6 +92,7 @@ class TestSolarWindsApmConfigServiceNameApmProto:
     def test__calculate_service_name_apm_proto_default_unknown_otel_service_name(
         self,
         mocker,
+        mock_env_vars,
     ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
@@ -104,6 +108,7 @@ class TestSolarWindsApmConfigServiceNameApmProto:
     def test__calculate_service_name_apm_proto_use_otel_service_name(
         self,
         mocker,
+        mock_env_vars,
     ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",

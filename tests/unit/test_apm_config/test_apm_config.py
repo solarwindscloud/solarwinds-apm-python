@@ -27,7 +27,7 @@ def setup_caplog():
 
 class TestSolarWindsApmConfig:
     """
-    Note: _calculate_agent_enabled sets defaults for OTEL_PROPAGATORS
+    Note: mock_env_vars test fixture sets values for OTEL_PROPAGATORS
     and OTEL_TRACES_EXPORTER. SW_APM_SERVICE_KEY is required.
     SW_APM_AGENT_ENABLED is optional.
     """
@@ -129,7 +129,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == ""
         assert test_config.get("service_key") == "service_key_with:sw_service_name"
 
-    def test__init_valid_service_key_format_agent_enabled_true_default(self, mocker):
+    def test__init_valid_service_key_format_agent_enabled_true_default(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
         })
@@ -138,7 +142,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == "sw_service_name"
         assert test_config.get("service_key") == "service_key_with:sw_service_name"
 
-    def test__init_valid_service_key_format_agent_enabled_true_explicit(self, mocker):
+    def test__init_valid_service_key_format_agent_enabled_true_explicit(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
             "SW_APM_AGENT_ENABLED": "true",
@@ -148,7 +156,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == "sw_service_name"
         assert test_config.get("service_key") == "service_key_with:sw_service_name"
 
-    def test__init_valid_service_key_format_otel_service_name(self, mocker):
+    def test__init_valid_service_key_format_otel_service_name(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
             "OTEL_SERVICE_NAME": "from_otel_env"
@@ -159,7 +171,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == "from_otel_env"
         assert test_config.get("service_key") == "service_key_with:from_otel_env"
 
-    def test__init_valid_service_key_format_otel_service_name_and_resource_attrs(self, mocker):
+    def test__init_valid_service_key_format_otel_service_name_and_resource_attrs(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
             "OTEL_SERVICE_NAME": "from_otel_env",
@@ -171,7 +187,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == "from_otel_env"
         assert test_config.get("service_key") == "service_key_with:from_otel_env"
 
-    def test__init_valid_service_key_format_otel_resource_attrs(self, mocker):
+    def test__init_valid_service_key_format_otel_resource_attrs(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
             "OTEL_RESOURCE_ATTRIBUTES": "service.name=also_from_otel_env_used_this_time"
@@ -182,7 +202,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == "also_from_otel_env_used_this_time"
         assert test_config.get("service_key") == "service_key_with:also_from_otel_env_used_this_time"
 
-    def test__init_valid_service_key_format_empty_otel_service_name(self, mocker):
+    def test__init_valid_service_key_format_empty_otel_service_name(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
             "OTEL_SERVICE_NAME": "",
@@ -193,7 +217,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == "sw_service_name"
         assert test_config.get("service_key") == "service_key_with:sw_service_name"
 
-    def test__init_valid_service_key_format_empty_otel_service_name_and_resource_attrs(self, mocker):
+    def test__init_valid_service_key_format_empty_otel_service_name_and_resource_attrs(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
             "OTEL_SERVICE_NAME": "",
@@ -205,7 +233,11 @@ class TestSolarWindsApmConfig:
         assert test_config.service_name == "sw_service_name"
         assert test_config.get("service_key") == "service_key_with:sw_service_name"
 
-    def test__init_valid_service_key_format_otel_resource_attrs_without_name(self, mocker):
+    def test__init_valid_service_key_format_otel_resource_attrs_without_name(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         mocker.patch.dict(os.environ, {
             "SW_APM_SERVICE_KEY": "service_key_with:sw_service_name",
             "OTEL_RESOURCE_ATTRIBUTES": "foo=bar,telemetry.sdk.version=whatever-i-want-baby",
@@ -633,7 +665,11 @@ class TestSolarWindsApmConfig:
         self._mock_service_key(mocker, "CyUuit1W--8RVmUXX6_cVjTWemaUyBh1ruL0nMPiFdrPo1iiRnO31_pwiUCPzdzv9UMHK6I")
         assert apm_config.SolarWindsApmConfig().mask_service_key() == "CyUu...<invalid_format>"
 
-    def test_mask_service_key_less_than_9_char_token(self, mocker):
+    def test_mask_service_key_less_than_9_char_token(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         self._mock_service_key(mocker, ":foo-bar")
         assert apm_config.SolarWindsApmConfig().mask_service_key() == ":foo-bar"
         self._mock_service_key(mocker, "a:foo-bar")
@@ -653,7 +689,11 @@ class TestSolarWindsApmConfig:
         self._mock_service_key(mocker, "abcdefgh:foo-bar")
         assert apm_config.SolarWindsApmConfig().mask_service_key() == "abcdefgh:foo-bar"
 
-    def test_mask_service_key_9_or_more_char_token(self, mocker):
+    def test_mask_service_key_9_or_more_char_token(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         self._mock_service_key(mocker, "abcd1efgh:foo-bar")
         assert apm_config.SolarWindsApmConfig().mask_service_key() == "abcd...efgh:foo-bar"
         self._mock_service_key(mocker, "abcd12efgh:foo-bar")
@@ -665,11 +705,19 @@ class TestSolarWindsApmConfig:
         self._mock_service_key(mocker, "CyUuit1W--8RVmUXX6_cVjTWemaUyBh1ruL0nMPiFdrPo1iiRnO31_pwiUCPzdzv9UMHK6I:foo-bar")
         assert apm_config.SolarWindsApmConfig().mask_service_key() == "CyUu...HK6I:foo-bar"
 
-    def test_config_mask_service_key(self, mocker):
+    def test_config_mask_service_key(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         self._mock_service_key(mocker, "valid-and-long:key")
         assert apm_config.SolarWindsApmConfig()._config_mask_service_key().get("service_key") == "vali...long:key"
 
-    def test_str(self, mocker):
+    def test_str(
+        self,
+        mocker,
+        mock_env_vars,
+    ):
         self._mock_service_key(mocker, "valid-and-long:key")
         result = str(apm_config.SolarWindsApmConfig())
         assert "vali...long:key" in result
